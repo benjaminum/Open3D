@@ -43,6 +43,8 @@ using namespace py::literals;
 
 typedef std::vector<Eigen::Matrix4d, open3d::utility::Matrix4d_allocator>
         temp_eigen_matrix4d;
+typedef std::vector<Eigen::Vector4i64, open3d::utility::Vector4i64_allocator>
+        temp_eigen_vector4i64;
 
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
@@ -50,6 +52,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Vector3d>);
 PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Vector3i>);
 PYBIND11_MAKE_OPAQUE(std::vector<Eigen::Vector2i>);
 PYBIND11_MAKE_OPAQUE(temp_eigen_matrix4d);
+PYBIND11_MAKE_OPAQUE(temp_eigen_vector4i64);
 PYBIND11_MAKE_OPAQUE(std::vector<open3d::registration::PoseGraphEdge>);
 PYBIND11_MAKE_OPAQUE(std::vector<open3d::registration::PoseGraphNode>);
 

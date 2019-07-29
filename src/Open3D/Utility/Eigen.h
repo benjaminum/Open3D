@@ -36,6 +36,7 @@ namespace Eigen {
 /// Extending Eigen namespace by adding frequently used matrix type
 typedef Eigen::Matrix<double, 6, 6> Matrix6d;
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
+typedef Eigen::Matrix<int64_t, 4, 1> Vector4i64;
 
 /// Use Eigen::DontAlign for matrices inside classes which are exposed in the
 /// Open3D headers https://github.com/intel-isl/Open3D/issues/653
@@ -53,6 +54,7 @@ using Vector2d_allocator = Eigen::aligned_allocator<Eigen::Vector2d>;
 using Vector4i_allocator = Eigen::aligned_allocator<Eigen::Vector4i>;
 using Vector4d_allocator = Eigen::aligned_allocator<Eigen::Vector4d>;
 using Vector6d_allocator = Eigen::aligned_allocator<Eigen::Vector6d>;
+using Vector4i64_allocator = Eigen::aligned_allocator<Eigen::Vector4i64>;
 
 /// Function to transform 6D motion vector to 4D motion matrix
 /// Reference:
