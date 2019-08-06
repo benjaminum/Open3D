@@ -430,9 +430,6 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
     // maps the tetrahedron index to the vertex index of the resulting triangle mesh
     std::unordered_map<size_t, size_t> tetra_vertex_index_map;
 
-    // counts the number of vertices we have to create for edges
-    std::atomic<size_t> edge_vertex_count(0);
-
     // count the number of triangles we have to create
     std::atomic<size_t> triangle_count(0);
 
@@ -496,14 +493,15 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
       {
         triangle_count += 2;
       }
-      else if( poly.size() >= 5 ) // triangle fan
+      else if( poly.size() >= 5 ) // poly
       {
-        ++edge_vertex_count;
-        triangle_count += poly.size();
+        // simple polygons (no holes, no self intersections)
+        // have N-2 triangles
+        triangle_count += poly.size()-2;
       }
       else // this should not happen
       {
-        std::cerr << poly.size() << " this should not happen\n";
+        std::cerr << poly.size() << " this should not happen: poly with less than 3 verts\n";
         edge.faces.clear();
         edge.adjacent_tetras_count = -1; // flag as ignore
         continue;
@@ -526,7 +524,7 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
 
     }
 
-    const size_t total_vertex_count = tetra_vertex_index_map.size() + edge_vertex_count;
+    const size_t total_vertex_count = tetra_vertex_index_map.size();
     std::vector<int> vertex_write_count(total_vertex_count, 0);
 
 
@@ -534,7 +532,6 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
     triangle_mesh->vertices_.resize(total_vertex_count, Eigen::Vector3d(-1,-1,-1));
     triangle_mesh->triangles_.resize(triangle_count, Eigen::Vector3i(-1,-1,-1));
 
-    std::atomic<size_t> current_edge_vertex_index(tetra_vertex_index_map.size());
     std::atomic<size_t> current_triangle_index(0);
 
     auto compute_edge_vertex = [&values, level, this](Index idx1, Index idx2) {
@@ -585,6 +582,50 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
       return ab.cross(ac);
     };
     
+    auto compute_points_eigenvectors = [](const std::vector<Eigen::Vector3d>& points)
+    {
+      Eigen::Matrix3d covariance;
+      Eigen::Matrix<double, 9, 1> cumulants;
+      cumulants.setZero();
+      for (size_t i = 0; i < points.size(); i++) {
+          const Eigen::Vector3d &point = points[i];
+          cumulants(0) += point(0);
+          cumulants(1) += point(1);
+          cumulants(2) += point(2);
+          cumulants(3) += point(0) * point(0);
+          cumulants(4) += point(0) * point(1);
+          cumulants(5) += point(0) * point(2);
+          cumulants(6) += point(1) * point(1);
+          cumulants(7) += point(1) * point(2);
+          cumulants(8) += point(2) * point(2);
+      }
+      cumulants /= (double)points.size();
+      covariance(0, 0) = cumulants(3) - cumulants(0) * cumulants(0);
+      covariance(1, 1) = cumulants(6) - cumulants(1) * cumulants(1);
+      covariance(2, 2) = cumulants(8) - cumulants(2) * cumulants(2);
+      covariance(0, 1) = cumulants(4) - cumulants(0) * cumulants(1);
+      covariance(1, 0) = covariance(0, 1);
+      covariance(0, 2) = cumulants(5) - cumulants(0) * cumulants(2);
+      covariance(2, 0) = covariance(0, 2);
+      covariance(1, 2) = cumulants(7) - cumulants(1) * cumulants(2);
+      covariance(2, 1) = covariance(1, 2);
+
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver;
+      solver.compute(covariance, Eigen::ComputeEigenvectors);
+      // store normal to intermediate var for compiler
+      Eigen::Matrix3d ev = solver.eigenvectors();
+      return ev;
+    };
+    
+    auto create_basis_vectors = [](const Eigen::Vector3d& n) {
+      // adapted from Duff et al. "Building an Orthonormal Basis, Revisited".
+      double sign = std::copysignf(1.0f, n.z());
+      const double a = -1.0f / (sign + n.z());
+      const double b = n.x() * n.y() * a;
+      Eigen::Vector3d b1 = Eigen::Vector3d(1.0f + sign * n.x() * n.x() * a, sign * b, -sign * n.x());
+      Eigen::Vector3d b2 = Eigen::Vector3d(b, sign + n.y() * n.y() * a, -n.y());
+      return std::make_tuple(b1,b2);
+    };
 
 
 #ifdef _OPENMP
@@ -697,57 +738,114 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
       }
       else if( poly.size() >= 5 )
       {
-        int edge_vertex_idx = current_edge_vertex_index.fetch_add(1);
-        Eigen::Vector3d edge_vertex = compute_edge_vertex(edge_vert1, edge_vert2);
-        edge_vertex << 0,0,0;
-        for( const auto& v : verts )
+        // project to a plane and triangulate the 2d poly with earcutting
+        bool success = false;
+        int attempt = 0;
+        std::vector<std::vector<std::array<double,2>>> poly2d(1);
+        poly2d[0].resize(poly.size());
+        while( attempt < 3 && !success )
         {
-          edge_vertex += v;
-        }
-        edge_vertex /= verts.size();
+          // usually the first ev is the normal but in degenerate cases
+          // the other eigenvectors provide a better basis for projecting
+          // the polygon
+          Eigen::Vector3d poly_normal = compute_points_eigenvectors(verts).col(attempt);
+          Eigen::Vector3d b1, b2;
+          std::tie(b1,b2) = create_basis_vectors(poly_normal);
 
-        triangle_mesh->vertices_[edge_vertex_idx] = edge_vertex;
-        vertex_write_count.at(edge_vertex_idx) += 1;
-
-        double dot = 0;
-        for( size_t i = 0; i < poly.size(); ++i )
-        {
-          dot += edge_dir.dot(compute_triangle_normal(edge_vertex, verts[i], verts[(i+1)%poly.size()]));
-        }
-        if( dot < 0 )
-        {
-          std::reverse(verts.begin(), verts.end());
-          std::reverse(poly.begin(), poly.end());
-        }
-        size_t triangle_index = current_triangle_index.fetch_add(poly.size());
-        for( size_t i = 0; i < poly.size(); ++i )
-        {
-          triangle_mesh->triangles_[triangle_index+i] << edge_vertex_idx, tetra_vertex_index_map[poly[i]], tetra_vertex_index_map[poly[(i+1)%poly.size()]];
-        }
-
-        {
-          std::vector<Eigen::Vector3d> tmp(verts); 
-          tmp.push_back(edge_vertex);
-          std::vector<int> tris;
+          // define a simple polygon without holes
           for( size_t i = 0; i < poly.size(); ++i )
           {
-            tris.push_back(tmp.size()-1);
-            tris.push_back(i);
-            tris.push_back((i+1)%poly.size());
+            poly2d[0][i] = {b1.dot(verts[i]-verts[0]), b2.dot(verts[i]-verts[0])};
           }
-          //sendPolyData("tri_fans", triangle_index, tmp, {}, tris);
+          std::vector<int> indices = mapbox::earcut<int>(poly2d);
+          const int new_triangles = indices.size()/3;
+
+          if( indices.size() % 3 == 0 && new_triangles == int(poly.size()-2) )
+          {
+            success = true;
+            double dot = 0;
+            for( int i = 0; i < new_triangles; ++i )
+            {
+              dot += edge_dir.dot(compute_triangle_normal(verts[indices[3*i+0]],verts[indices[3*i+1]],verts[indices[3*i+2]]));
+            }
+            if( dot < 0 )
+            {
+              for( int i = 0; i < new_triangles; ++i )
+              {
+                std::swap(indices[i*3+1], indices[i*3+2]);
+              }
+            }
+            size_t triangle_index = current_triangle_index.fetch_add(new_triangles);
+            for( int i = 0; i < new_triangles; ++i )
+            {
+              triangle_mesh->triangles_[triangle_index+i] << tetra_vertex_index_map[poly[indices[3*i+0]]], tetra_vertex_index_map[poly[indices[3*i+1]]], tetra_vertex_index_map[poly[indices[3*i+2]]];
+            }
+
+
+
+
+
+        //if( indices.size() != 3*(poly.size()-2) )
+        //{
+          //{
+            //std::vector<Eigen::Vector3d> tmp;
+            //tmp.push_back(verts[0]); 
+            //tmp.push_back(verts[0]+poly_normal); 
+
+            //std::vector<int> lines = {0,1};
+            //sendPolyData("poly_normal", triangle_index, tmp, lines, {});
+          //}
+
+          //{
+            //std::vector<Eigen::Vector3d> tmp(verts); 
+
+            //std::vector<int> lines;
+            //for( size_t i = 0; i < poly.size(); ++i )
+            //{
+              //lines.insert(lines.end(), {int(i), int((i+1)%poly.size())});
+            //}
+            //sendPolyData("poly", triangle_index, tmp, lines, {});
+          //}
+
+          //{
+            //std::vector<Eigen::Vector3d> tmp; 
+            //for( const auto& v2 : poly2d[0] ){
+              //tmp.push_back(Eigen::Vector3d(v2[0], v2[1],0));
+            //}
+
+            //std::vector<int> lines;
+            //for( size_t i = 0; i < tmp.size(); ++i )
+            //{
+              //lines.insert(lines.end(), {int(i), int((i+1)%poly.size())});
+            //}
+            //sendPolyData("poly2d", triangle_index, tmp, lines, indices);
+          //}
+        //}
+
+
+
+
+
+
+          }
+          ++attempt;
         }
+
+        if( !success )
+        {
+            std::cerr << " this should not happen: cannot triangulate polygon\n";
+        }
+
+
+
+
+
       }
 
 
     }
 
-    for( auto v : vertex_write_count )
-      std::cerr << v << " ";
-    std::cerr << "\n";
-    std::cerr << "\n" << edge_vertex_count <<"\n";
-
-
+    triangle_mesh->triangles_.resize(current_triangle_index);
     return triangle_mesh;
 }
 
