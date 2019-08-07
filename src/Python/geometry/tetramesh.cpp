@@ -37,9 +37,8 @@ void pybind_tetramesh(py::module &m) {
                std::shared_ptr<geometry::TetraMesh>, geometry::Geometry3D>
             trianglemesh(m, "TetraMesh",
                          "TetraMesh class. Tetra mesh contains vertices "
-                         "and triangles represented by the indices to the "
-                         "vertices. Optionally, the mesh may also contain "
-                         "triangle normals, vertex normals and vertex colors.");
+                         "and tetrahedra represented by the indices to the "
+                         "vertices.");
     py::detail::bind_default_constructor<geometry::TetraMesh>(trianglemesh);
     py::detail::bind_copy_functions<geometry::TetraMesh>(trianglemesh);
     trianglemesh
