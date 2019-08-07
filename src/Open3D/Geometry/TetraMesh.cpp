@@ -113,6 +113,7 @@ TetraMesh &TetraMesh::Rotate(const Eigen::Vector3d &rotation,
 }
 
 TetraMesh &TetraMesh::operator+=(const TetraMesh &mesh) {
+    typedef decltype (tetras_)::value_type Vector4i;
     if (mesh.IsEmpty()) return (*this);
     size_t old_vert_num = vertices_.size();
     size_t add_vert_num = mesh.vertices_.size();
@@ -124,8 +125,8 @@ TetraMesh &TetraMesh::operator+=(const TetraMesh &mesh) {
         vertices_[old_vert_num + i] = mesh.vertices_[i];
 
     tetras_.resize(tetras_.size() + mesh.tetras_.size());
-    Eigen::Vector4i64 index_shift =
-            Eigen::Vector4i64::Constant((int64_t)old_vert_num);
+    Vector4i index_shift =
+            Vector4i::Constant((int64_t)old_vert_num);
     for (size_t i = 0; i < add_tetra_num; i++) {
         tetras_[old_tetra_num + i] = mesh.tetras_[i] + index_shift;
     }

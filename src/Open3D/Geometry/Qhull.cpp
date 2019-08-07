@@ -100,13 +100,14 @@ std::shared_ptr<TriangleMesh> Qhull::ComputeConvexHull(
 
 std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
         const std::vector<Eigen::Vector3d>& points) {
+    typedef decltype (TetraMesh::tetras_)::value_type Vector4i;
     auto delaunay_triangulation = std::make_shared<TetraMesh>();
 
     if (points.size() == 4)  // qhull cannot deal with this case
     {
         delaunay_triangulation->vertices_ = points;
         delaunay_triangulation->tetras_.push_back(
-                Eigen::Vector4i64(0, 1, 2, 3));
+                Vector4i(0, 1, 2, 3));
         return delaunay_triangulation;
     } else if (points.size() < 3) {
         return delaunay_triangulation;
@@ -161,7 +162,7 @@ std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
         tidx++;
     }
 
-    for (Eigen::Vector4i64& tetra : delaunay_triangulation->tetras_) {
+    for (auto& tetra : delaunay_triangulation->tetras_) {
         tetra(0) = vert_map[tetra(0)];
         tetra(1) = vert_map[tetra(1)];
         tetra(2) = vert_map[tetra(2)];
