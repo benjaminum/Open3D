@@ -182,7 +182,7 @@ bool LineSetRenderer::UpdateGeometry() {
 }
 
 bool TetraMeshRenderer::Render(const RenderOption &option,
-                             const ViewControl &view) {
+                               const ViewControl &view) {
     if (is_visible_ == false || geometry_ptr_->IsEmpty()) return true;
     return simple_tetramesh_shader_.Render(*geometry_ptr_, option, view);
 }

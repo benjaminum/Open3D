@@ -25,8 +25,8 @@
 // ----------------------------------------------------------------------------
 
 #include "Open3D/Geometry/Qhull.h"
-#include "Open3D/Geometry/TriangleMesh.h"
 #include "Open3D/Geometry/TetraMesh.h"
+#include "Open3D/Geometry/TriangleMesh.h"
 
 #include "libqhullcpp/PointCoordinates.h"
 #include "libqhullcpp/Qhull.h"
@@ -98,20 +98,18 @@ std::shared_ptr<TriangleMesh> Qhull::ComputeConvexHull(
     return convex_hull;
 }
 
-
 std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
         const std::vector<Eigen::Vector3d>& points) {
     auto delaunay_triangulation = std::make_shared<TetraMesh>();
 
-    if( points.size() == 4 ) // qhull cannot deal with this case
+    if (points.size() == 4)  // qhull cannot deal with this case
     {
-      delaunay_triangulation->vertices_ = points;
-      delaunay_triangulation->tetras_.push_back(Eigen::Vector4i64(0,1,2,3));
-      return delaunay_triangulation;
-    }
-    else if( points.size() < 3 )
-    {
-      return delaunay_triangulation;
+        delaunay_triangulation->vertices_ = points;
+        delaunay_triangulation->tetras_.push_back(
+                Eigen::Vector4i64(0, 1, 2, 3));
+        return delaunay_triangulation;
+    } else if (points.size() < 3) {
+        return delaunay_triangulation;
     }
 
     std::vector<double> qhull_points_data(points.size() * 3);
@@ -127,7 +125,8 @@ std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
 
     orgQhull::Qhull qhull;
     qhull.runQhull(qhull_points.comment().c_str(), qhull_points.dimension(),
-                   qhull_points.count(), qhull_points.coordinates(), "d Qbb Qt");
+                   qhull_points.count(), qhull_points.coordinates(),
+                   "d Qbb Qt");
 
     orgQhull::QhullFacetList facets = qhull.facetList();
     delaunay_triangulation->tetras_.resize(facets.count());
@@ -170,7 +169,6 @@ std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
     }
 
     return delaunay_triangulation;
-
 }
 
 }  // namespace geometry

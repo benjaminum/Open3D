@@ -78,10 +78,14 @@ void pybind_tetramesh(py::module &m) {
                  "Returns ``True`` if the mesh contains tetras.")
             .def("extract_triangle_mesh",
                  &geometry::TetraMesh::ExtractTriangleMesh,
-                 "Function that generates a triangle mesh of the specified iso-surface.",
+                 "Function that generates a triangle mesh of the specified "
+                 "iso-surface.",
                  "values"_a, "level"_a)
-            .def_static("create_from_point_cloud", &geometry::TetraMesh::CreateFromPointCloud,
-                        "Function to create a tetrahedral mesh from a point cloud.", "point_cloud"_a)
+            .def_static(
+                    "create_from_point_cloud",
+                    &geometry::TetraMesh::CreateFromPointCloud,
+                    "Function to create a tetrahedral mesh from a point cloud.",
+                    "point_cloud"_a)
             .def_readwrite("vertices", &geometry::TetraMesh::vertices_,
                            "``float64`` array of shape ``(num_vertices, 3)``, "
                            "use ``numpy.asarray()`` to access data: Vertex "
@@ -95,19 +99,17 @@ void pybind_tetramesh(py::module &m) {
     docstring::ClassMethodDocInject(m, "TetraMesh", "has_vertices");
     docstring::ClassMethodDocInject(m, "TetraMesh",
                                     "remove_duplicated_vertices");
-    docstring::ClassMethodDocInject(m, "TetraMesh",
-                                    "remove_duplicated_tetras");
+    docstring::ClassMethodDocInject(m, "TetraMesh", "remove_duplicated_tetras");
     docstring::ClassMethodDocInject(m, "TetraMesh",
                                     "remove_unreferenced_vertices");
-    docstring::ClassMethodDocInject(m, "TetraMesh",
-                                    "remove_degenerate_tetras");
-    docstring::ClassMethodDocInject(m, "TetraMesh",
-                                    "extract_triangle_mesh", 
-                                    {{"values", "Vector with a scalar value for each vertex in the tetra mesh"}, {"level", "A scalar which defines the level-set to extract"}});
-    docstring::ClassMethodDocInject(m, "TetraMesh",
-                                    "create_from_point_cloud", 
+    docstring::ClassMethodDocInject(m, "TetraMesh", "remove_degenerate_tetras");
+    docstring::ClassMethodDocInject(
+            m, "TetraMesh", "extract_triangle_mesh",
+            {{"values",
+              "Vector with a scalar value for each vertex in the tetra mesh"},
+             {"level", "A scalar which defines the level-set to extract"}});
+    docstring::ClassMethodDocInject(m, "TetraMesh", "create_from_point_cloud",
                                     {{"point_cloud", "A PointCloud."}});
-
 }
 
 void pybind_tetramesh_methods(py::module &m) {}

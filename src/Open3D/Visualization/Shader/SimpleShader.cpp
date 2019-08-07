@@ -29,8 +29,8 @@
 #include "Open3D/Geometry/LineSet.h"
 #include "Open3D/Geometry/Octree.h"
 #include "Open3D/Geometry/PointCloud.h"
-#include "Open3D/Geometry/TriangleMesh.h"
 #include "Open3D/Geometry/TetraMesh.h"
+#include "Open3D/Geometry/TriangleMesh.h"
 #include "Open3D/Geometry/VoxelGrid.h"
 #include "Open3D/Visualization/Shader/Shader.h"
 #include "Open3D/Visualization/Utility/ColorMap.h"
@@ -286,30 +286,30 @@ bool SimpleShaderForTetraMesh::PrepareBinding(
         std::vector<Eigen::Vector3f> &colors) {
     typedef decltype(geometry::TetraMesh::tetras_)::value_type TetraIndices;
     typedef decltype(geometry::TetraMesh::tetras_)::value_type::Scalar Index;
-    typedef std::tuple<Index,Index> Index2;
+    typedef std::tuple<Index, Index> Index2;
 
     if (geometry.GetGeometryType() !=
         geometry::Geometry::GeometryType::TetraMesh) {
         PrintShaderWarning("Rendering type is not geometry::TetraMesh.");
         return false;
     }
-    const geometry::TetraMesh &tetramesh = (const geometry::TetraMesh &)geometry;
+    const geometry::TetraMesh &tetramesh =
+            (const geometry::TetraMesh &)geometry;
     if (tetramesh.HasTetras() == false) {
         PrintShaderWarning("Binding failed with empty geometry::TetraMesh.");
         return false;
     }
-    
-    std::unordered_set<Index2,
-                       utility::hash_tuple::hash<Index2>> 
-                         inserted_edges;
+
+    std::unordered_set<Index2, utility::hash_tuple::hash<Index2>>
+            inserted_edges;
     auto InsertEdge = [&](Index vidx0, Index vidx1) {
         Index2 edge(std::min(vidx0, vidx1), std::max(vidx0, vidx1));
         if (inserted_edges.count(edge) == 0) {
             inserted_edges.insert(edge);
             Eigen::Vector3f p0 = tetramesh.vertices_[vidx0].cast<float>();
             Eigen::Vector3f p1 = tetramesh.vertices_[vidx1].cast<float>();
-            points.insert(points.end(), {p0,p1});
-            Eigen::Vector3f color(0,0,0);
+            points.insert(points.end(), {p0, p1});
+            Eigen::Vector3f color(0, 0, 0);
             colors.insert(colors.end(), {color, color});
         }
     };

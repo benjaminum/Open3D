@@ -28,8 +28,8 @@
 
 #include "Open3D/Geometry/LineSet.h"
 #include "Open3D/Geometry/PointCloud.h"
-#include "Open3D/Geometry/TriangleMesh.h"
 #include "Open3D/Geometry/TetraMesh.h"
+#include "Open3D/Geometry/TriangleMesh.h"
 
 namespace open3d {
 namespace geometry {
@@ -80,8 +80,7 @@ std::shared_ptr<LineSet> LineSet::CreateFromTriangleMesh(
     return line_set;
 }
 
-std::shared_ptr<LineSet> LineSet::CreateFromTetraMesh(
-        const TetraMesh &mesh) {
+std::shared_ptr<LineSet> LineSet::CreateFromTetraMesh(const TetraMesh &mesh) {
     auto line_set = std::make_shared<LineSet>();
     line_set->points_ = mesh.vertices_;
 

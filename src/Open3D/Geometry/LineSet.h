@@ -97,8 +97,7 @@ public:
 
     /// Factory function to create a LineSet from edges of a tetra mesh
     /// \param mesh.
-    static std::shared_ptr<LineSet> CreateFromTetraMesh(
-            const TetraMesh &mesh);
+    static std::shared_ptr<LineSet> CreateFromTetraMesh(const TetraMesh &mesh);
 
 public:
     std::vector<Eigen::Vector3d> points_;

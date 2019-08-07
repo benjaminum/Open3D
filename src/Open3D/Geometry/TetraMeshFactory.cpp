@@ -24,15 +24,16 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
-#include "Open3D/Geometry/TetraMesh.h"
 #include "Open3D/Geometry/PointCloud.h"
 #include "Open3D/Geometry/Qhull.h"
+#include "Open3D/Geometry/TetraMesh.h"
 #include "Open3D/Utility/Console.h"
 
 namespace open3d {
 namespace geometry {
 
-std::shared_ptr<TetraMesh> TetraMesh::CreateFromPointCloud( const PointCloud& point_cloud ) {
+std::shared_ptr<TetraMesh> TetraMesh::CreateFromPointCloud(
+        const PointCloud& point_cloud) {
     return Qhull::ComputeDelaunayTriangulation3D(point_cloud.points_);
 }
 

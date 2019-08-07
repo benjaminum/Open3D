@@ -89,13 +89,14 @@ std::vector<EigenVector> py_array_to_vectors_int(
 
 template <typename EigenVector,
           typename EigenAllocator = Eigen::aligned_allocator<EigenVector>>
-std::vector<EigenVector,EigenAllocator> py_array_to_vectors_int64_eigen_allocator(
+std::vector<EigenVector, EigenAllocator>
+py_array_to_vectors_int64_eigen_allocator(
         py::array_t<int64_t, py::array::c_style | py::array::forcecast> array) {
     size_t eigen_vector_size = EigenVector::SizeAtCompileTime;
     if (array.ndim() != 2 || array.shape(1) != eigen_vector_size) {
         throw py::cast_error();
     }
-    std::vector<EigenVector,EigenAllocator> eigen_vectors(array.shape(0));
+    std::vector<EigenVector, EigenAllocator> eigen_vectors(array.shape(0));
     auto array_unchecked = array.mutable_unchecked<2>();
     for (auto i = 0; i < array_unchecked.shape(0); ++i) {
         eigen_vectors[i] = Eigen::Map<EigenVector>(&array_unchecked(i, 0));
@@ -223,13 +224,14 @@ py::class_<Vector, holder_type> pybind_eigen_vector_of_vector_eigen_allocator(
             std::vector<EigenVector, EigenAllocator>>(m, bind_name,
                                                       py::buffer_protocol());
     vec.def(py::init(init_func));
-    vec.def_buffer([](std::vector<EigenVector,EigenAllocator> &v) -> py::buffer_info {
-        size_t rows = EigenVector::RowsAtCompileTime;
-        return py::buffer_info(v.data(), sizeof(Scalar),
-                               py::format_descriptor<Scalar>::format(), 2,
-                               {v.size(), rows},
-                               {sizeof(EigenVector), sizeof(Scalar)});
-    });
+    vec.def_buffer(
+            [](std::vector<EigenVector, EigenAllocator> &v) -> py::buffer_info {
+                size_t rows = EigenVector::RowsAtCompileTime;
+                return py::buffer_info(v.data(), sizeof(Scalar),
+                                       py::format_descriptor<Scalar>::format(),
+                                       2, {v.size(), rows},
+                                       {sizeof(EigenVector), sizeof(Scalar)});
+            });
     vec.def("__repr__",
             [repr_name](const std::vector<EigenVector, EigenAllocator> &v) {
                 return repr_name + std::string(" with ") +
@@ -408,7 +410,8 @@ Example usage
             }),
             py::none(), py::none(), "");
 
-    auto vector4i64vector = pybind_eigen_vector_of_vector_eigen_allocator<Eigen::Vector4i64>(
+    auto vector4i64vector = pybind_eigen_vector_of_vector_eigen_allocator<
+            Eigen::Vector4i64>(
             m, "Vector4i64Vector", "std::vector<Eigen::Vector4i64>",
             py::py_array_to_vectors_int64_eigen_allocator<Eigen::Vector4i64>);
     vector4i64vector.attr("__doc__") = docstring::static_property(
@@ -417,5 +420,4 @@ Example usage
                        "Open3D format.";
             }),
             py::none(), py::none(), "");
-
 }

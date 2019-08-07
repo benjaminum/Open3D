@@ -34,8 +34,8 @@
 #include <vector>
 
 #include "Open3D/Geometry/Geometry3D.h"
-#include "Open3D/Utility/Helper.h"
 #include "Open3D/Utility/Eigen.h"
+#include "Open3D/Utility/Helper.h"
 
 namespace open3d {
 namespace geometry {
@@ -45,7 +45,6 @@ class TriangleMesh;
 
 class TetraMesh : public Geometry3D {
 public:
-
     TetraMesh() : Geometry3D(Geometry::GeometryType::TetraMesh) {}
     ~TetraMesh() override {}
 
@@ -58,8 +57,8 @@ public:
     TetraMesh &Translate(const Eigen::Vector3d &translation) override;
     TetraMesh &Scale(const double scale, bool center = true) override;
     TetraMesh &Rotate(const Eigen::Vector3d &rotation,
-                         bool center = true,
-                         RotationType type = RotationType::XYZ) override;
+                      bool center = true,
+                      RotationType type = RotationType::XYZ) override;
 
 public:
     TetraMesh &operator+=(const TetraMesh &mesh);
@@ -89,11 +88,13 @@ public:
     }
 
     /// Function to extract a triangle mesh of the specified iso-surface.
-    std::shared_ptr<TriangleMesh> ExtractTriangleMesh(const std::vector<double>& values, double level);
+    std::shared_ptr<TriangleMesh> ExtractTriangleMesh(
+            const std::vector<double> &values, double level);
 
     /// Function that creates a tetrahedral mesh (TetraMeshFactory.cpp).
     /// from a point cloud.
-    static std::shared_ptr<TetraMesh> CreateFromPointCloud(const PointCloud& point_cloud);
+    static std::shared_ptr<TetraMesh> CreateFromPointCloud(
+            const PointCloud &point_cloud);
 
 protected:
     // Forward child class type to avoid indirect nonvirtual base
