@@ -90,6 +90,23 @@ std::vector<EigenVector> py_array_to_vectors_int(
 template <typename EigenVector,
           typename EigenAllocator = Eigen::aligned_allocator<EigenVector>>
 std::vector<EigenVector, EigenAllocator>
+py_array_to_vectors_int_eigen_allocator(
+        py::array_t<int, py::array::c_style | py::array::forcecast> array) {
+    size_t eigen_vector_size = EigenVector::SizeAtCompileTime;
+    if (array.ndim() != 2 || array.shape(1) != eigen_vector_size) {
+        throw py::cast_error();
+    }
+    std::vector<EigenVector, EigenAllocator> eigen_vectors(array.shape(0));
+    auto array_unchecked = array.mutable_unchecked<2>();
+    for (auto i = 0; i < array_unchecked.shape(0); ++i) {
+        eigen_vectors[i] = Eigen::Map<EigenVector>(&array_unchecked(i, 0));
+    }
+    return eigen_vectors;
+}
+
+template <typename EigenVector,
+          typename EigenAllocator = Eigen::aligned_allocator<EigenVector>>
+std::vector<EigenVector, EigenAllocator>
 py_array_to_vectors_int64_eigen_allocator(
         py::array_t<int64_t, py::array::c_style | py::array::forcecast> array) {
     size_t eigen_vector_size = EigenVector::SizeAtCompileTime;
@@ -406,6 +423,17 @@ Example usage
     matrix4dvector.attr("__doc__") = docstring::static_property(
             py::cpp_function([](py::handle arg) -> std::string {
                 return "Convert float64 numpy array of shape ``(n, 4, 4)`` to "
+                       "Open3D format.";
+            }),
+            py::none(), py::none(), "");
+
+    auto vector4ivector = pybind_eigen_vector_of_vector_eigen_allocator<
+            Eigen::Vector4i>(
+            m, "Vector4iVector", "std::vector<Eigen::Vector4i>",
+            py::py_array_to_vectors_int_eigen_allocator<Eigen::Vector4i>);
+    vector4ivector.attr("__doc__") = docstring::static_property(
+            py::cpp_function([](py::handle arg) -> std::string {
+                return "Convert int numpy array of shape ``(n, 4)`` to "
                        "Open3D format.";
             }),
             py::none(), py::none(), "");
