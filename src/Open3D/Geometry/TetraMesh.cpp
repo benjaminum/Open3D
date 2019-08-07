@@ -268,6 +268,13 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(
     static_assert(std::is_signed<Index>(), "Index type must be signed");
     typedef std::tuple<Index, Index> Index2;
 
+    auto triangle_mesh = std::make_shared<TriangleMesh>();
+
+    if (values.size() != vertices_.size()) {
+        utility::LogWarning("[ExtractTriangleMesh] number of values does not match the number of vertices.\n");
+        return triangle_mesh;
+    }
+
     auto surface_intersection_test = [](double v0, double v1, double level) {
         return (v0 < level && v1 >= level) || (v0 >= level && v1 < level);
     };
@@ -310,7 +317,6 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(
         return false;
     };
 
-    auto triangle_mesh = std::make_shared<TriangleMesh>();
 
     std::unordered_map<Index2, size_t, utility::hash_tuple::hash<Index2>>
             intersecting_edges;

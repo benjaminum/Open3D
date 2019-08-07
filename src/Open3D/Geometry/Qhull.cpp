@@ -27,6 +27,7 @@
 #include "Open3D/Geometry/Qhull.h"
 #include "Open3D/Geometry/TetraMesh.h"
 #include "Open3D/Geometry/TriangleMesh.h"
+#include "Open3D/Utility/Console.h"
 
 #include "libqhullcpp/PointCoordinates.h"
 #include "libqhullcpp/Qhull.h"
@@ -103,8 +104,14 @@ std::shared_ptr<TetraMesh> Qhull::ComputeDelaunayTriangulation3D(
     typedef decltype (TetraMesh::tetras_)::value_type Vector4i;
     auto delaunay_triangulation = std::make_shared<TetraMesh>();
 
-    if (points.size() == 4)  // qhull cannot deal with this case
-    {
+    if (points.size() < 4) {
+        utility::LogWarning("[ComputeDelaunayTriangulation3D] not enough points to create a tetrahedral mesh.\n");
+        return delaunay_triangulation;
+    }
+
+
+    // qhull cannot deal with this case
+    if (points.size() == 4)  {
         delaunay_triangulation->vertices_ = points;
         delaunay_triangulation->tetras_.push_back(
                 Vector4i(0, 1, 2, 3));

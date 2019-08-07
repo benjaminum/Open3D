@@ -101,7 +101,7 @@ protected:
 
 public:
     std::vector<Eigen::Vector3d> vertices_;
-    std::vector<Eigen::Vector4i64, utility::Vector4i64_allocator> tetras_;
+    std::vector<Eigen::Vector4i, utility::Vector4i_allocator> tetras_;
 };
 
 }  // namespace geometry
