@@ -1,5 +1,3 @@
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
 // ----------------------------------------------------------------------------
 // -                        Open3D: www.open3d.org                            -
 // ----------------------------------------------------------------------------
@@ -278,6 +276,7 @@ TetraMesh &TetraMesh::RemoveDegenerateTetras() {
 }
 
 
+#if 0
 std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<double>& values, double level) {
     typedef decltype(tetras_)::value_type::Scalar Index;
     static_assert(std::is_signed<Index>(), "Index type must be signed");
@@ -822,11 +821,6 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
           //}
         //}
 
-
-
-
-
-
           }
           ++attempt;
         }
@@ -846,6 +840,185 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<d
     }
 
     triangle_mesh->triangles_.resize(current_triangle_index);
+    return triangle_mesh;
+}
+#endif
+
+
+
+std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(const std::vector<double>& values, double level) {
+    typedef decltype(tetras_)::value_type::Scalar Index;
+    static_assert(std::is_signed<Index>(), "Index type must be signed");
+    typedef std::tuple<Index,Index> Index2;
+
+
+    auto surface_intersection_test = []( double v0, double v1, double level ){
+      return (v0 < level && v1 >= level) || (v0 >= level && v1 < level);
+    };
+
+    auto compute_edge_vertex = [&values, level, this](Index idx1, Index idx2) {
+      double v1 = values[idx1];
+      double v2 = values[idx2];
+      
+      double t = (level-v2)/(v1-v2);
+      if( std::isnan(t) || t < 0 || t > 1 )
+      {
+        std::cerr << "compute_edge_vertex!\n";
+        t = 0.5;
+      }
+      Eigen::Vector3d intersection = t*vertices_[idx1] + (1-t)*vertices_[idx2];
+      
+      return intersection;
+    };
+
+    auto compute_triangle_normal = [](
+        const Eigen::Vector3d& a, 
+        const Eigen::Vector3d& b, 
+        const Eigen::Vector3d& c
+        ){
+      Eigen::Vector3d ab(b-a);
+      Eigen::Vector3d ac(c-a);
+      return ab.cross(ac);
+    };
+
+    auto make_sorted_tuple2 = []( Index a, Index b ){
+      if ( a < b ) return std::make_tuple(a,b);
+      else return std::make_tuple(b,a);
+    };
+
+    auto has_common_vertex_index = []( Index2 a, Index2 b ){
+      if( std::get<0>(b) == std::get<0>(a) || std::get<1>(b) == std::get<0>(a) 
+       ||  std::get<0>(b) == std::get<1>(a) || std::get<1>(b) == std::get<1>(a) )
+        return true;
+      return false;
+    };
+
+    auto triangle_mesh = std::make_shared<TriangleMesh>();
+    
+    std::unordered_map<Index2, size_t, utility::hash_tuple::hash<Index2>> intersecting_edges;
+
+    const int tetra_edges[][2] = {{0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3}};
+#undef _OPENMP
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for( size_t tetra_i = 0; tetra_i < tetras_.size(); ++tetra_i )
+    {
+      const auto& tetra = tetras_[tetra_i];
+
+      std::array<Eigen::Vector3d,4> verts;
+      std::array<Index2,4> keys;
+      std::array<Index,4> verts_indices;
+      std::array<Eigen::Vector3d,4> edge_dirs;
+      int num_verts = 0;
+
+      for( int tet_edge_i = 0; tet_edge_i < 6; ++tet_edge_i )
+      {
+        Index edge_vert1 = tetra[tetra_edges[tet_edge_i][0]];
+        Index edge_vert2 = tetra[tetra_edges[tet_edge_i][1]];
+        double vert_value1 = values[edge_vert1];
+        double vert_value2 = values[edge_vert2];
+        if( surface_intersection_test(vert_value1, vert_value2, level) )
+        {
+          Index2 index = make_sorted_tuple2(edge_vert1, edge_vert2);
+          verts[num_verts] = compute_edge_vertex(edge_vert1, edge_vert2);
+          keys[num_verts] = index;
+
+          // make edge_vert1 be the vertex that is smaller than level (inside)
+          if( values[edge_vert1] > values[edge_vert2] )
+            std::swap(edge_vert1, edge_vert2);
+          edge_dirs[num_verts] = vertices_[edge_vert2]-vertices_[edge_vert1];
+          ++num_verts;
+        }
+      }
+
+#pragma omp critical(add_vertex)
+      {
+        for( int i = 0; i < num_verts; ++i )
+        {
+          if( intersecting_edges.count(keys[i]) == 0 )
+          {
+            Index idx = intersecting_edges.size();
+            verts_indices[i] = idx;
+            intersecting_edges[keys[i]] = idx;
+            triangle_mesh->vertices_.push_back(verts[i]);
+          }
+          else
+          {
+            verts_indices[i] = intersecting_edges[keys[i]];
+          }
+        }
+      }
+      if( 3 == num_verts )
+      {
+        Eigen::Vector3i tri(verts_indices[0], verts_indices[1], verts_indices[2]);
+
+        Eigen::Vector3d tri_normal = compute_triangle_normal(verts[0], verts[1], verts[2]);
+
+        // accumulate to improve robustness of the triangle orientation test
+        double dot = 0;
+        for( int i = 0; i < 3; ++i )
+          dot += tri_normal.dot(edge_dirs[i]);
+        if( dot < 0 )
+          std::swap(tri.x(), tri.y());
+        
+#pragma omp critical(add_triangle)
+        {
+          triangle_mesh->triangles_.push_back(tri);
+        }
+      }
+      else if( 4 == num_verts )
+      {
+        std::array<int,4> order;
+        if( has_common_vertex_index(keys[0], keys[1]) && has_common_vertex_index(keys[0], keys[2]) )
+        {
+          order = {1,0,2,3};
+        }
+        else if( has_common_vertex_index(keys[0], keys[1]) && has_common_vertex_index(keys[0], keys[3]) )
+        {
+          order = {1,0,3,2};
+        }
+        else if( has_common_vertex_index(keys[0], keys[2]) && has_common_vertex_index(keys[0], keys[3]) )
+        {
+          order = {2,0,3,1};
+        }
+
+        // accumulate to improve robustness of the triangle orientation test
+        double dot = 0;
+        for( int i = 0; i < 4; ++i )
+        {
+          Eigen::Vector3d tri_normal = compute_triangle_normal(verts[order[(4+i-1)%4]], verts[order[i]], verts[order[(i+1)%4]]);
+          dot += tri_normal.dot(edge_dirs[order[i]]);
+        }
+        if( dot < 0 )
+          std::reverse(order.begin(), order.end());
+
+        std::array<Eigen::Vector3i,2> tris;
+        if( (verts[order[0]]-verts[order[2]]).squaredNorm() < (verts[order[1]]-verts[order[3]]).squaredNorm() )
+        {
+          tris[0] << verts_indices[order[0]], verts_indices[order[1]], verts_indices[order[2]];
+          tris[1] << verts_indices[order[2]], verts_indices[order[3]], verts_indices[order[0]];
+        }
+        else
+        {
+          tris[0] << verts_indices[order[0]], verts_indices[order[1]], verts_indices[order[3]];
+          tris[1] << verts_indices[order[1]], verts_indices[order[2]], verts_indices[order[3]];
+        }
+
+
+#pragma omp critical(add_triangle)
+        {
+          triangle_mesh->triangles_.insert(triangle_mesh->triangles_.end(), {tris[0], tris[1]});
+        }
+
+      }
+      else if( 0 != num_verts )
+      {
+        std::cerr << "this should not happen: " << num_verts << "\n";
+      }
+
+    }
+
     return triangle_mesh;
 }
 
