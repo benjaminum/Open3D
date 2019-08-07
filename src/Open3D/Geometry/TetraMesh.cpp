@@ -113,7 +113,7 @@ TetraMesh &TetraMesh::Rotate(const Eigen::Vector3d &rotation,
 }
 
 TetraMesh &TetraMesh::operator+=(const TetraMesh &mesh) {
-    typedef decltype (tetras_)::value_type Vector4i;
+    typedef decltype(tetras_)::value_type Vector4i;
     if (mesh.IsEmpty()) return (*this);
     size_t old_vert_num = vertices_.size();
     size_t add_vert_num = mesh.vertices_.size();
@@ -125,8 +125,7 @@ TetraMesh &TetraMesh::operator+=(const TetraMesh &mesh) {
         vertices_[old_vert_num + i] = mesh.vertices_[i];
 
     tetras_.resize(tetras_.size() + mesh.tetras_.size());
-    Vector4i index_shift =
-            Vector4i::Constant((int64_t)old_vert_num);
+    Vector4i index_shift = Vector4i::Constant((int64_t)old_vert_num);
     for (size_t i = 0; i < add_tetra_num; i++) {
         tetras_[old_tetra_num + i] = mesh.tetras_[i] + index_shift;
     }
@@ -271,7 +270,9 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(
     auto triangle_mesh = std::make_shared<TriangleMesh>();
 
     if (values.size() != vertices_.size()) {
-        utility::LogWarning("[ExtractTriangleMesh] number of values does not match the number of vertices.\n");
+        utility::LogWarning(
+                "[ExtractTriangleMesh] number of values does not match the "
+                "number of vertices.\n");
         return triangle_mesh;
     }
 
@@ -316,7 +317,6 @@ std::shared_ptr<TriangleMesh> TetraMesh::ExtractTriangleMesh(
             return true;
         return false;
     };
-
 
     std::unordered_map<Index2, size_t, utility::hash_tuple::hash<Index2>>
             intersecting_edges;
