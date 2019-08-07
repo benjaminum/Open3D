@@ -29,8 +29,6 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "Open3D/Geometry/Geometry3D.h"
@@ -87,7 +85,8 @@ public:
         return vertices_.size() > 0 && tetras_.size() > 0;
     }
 
-    /// Function to extract a triangle mesh of the specified iso-surface.
+    /// Function to extract a triangle mesh of the specified iso-surface at
+    /// \param level. \param values are values per-vertex.
     std::shared_ptr<TriangleMesh> ExtractTriangleMesh(
             const std::vector<double> &values, double level);
 
