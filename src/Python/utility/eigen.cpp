@@ -437,15 +437,4 @@ Example usage
                        "Open3D format.";
             }),
             py::none(), py::none(), "");
-
-    auto vector4i64vector = pybind_eigen_vector_of_vector_eigen_allocator<
-            Eigen::Vector4i64>(
-            m, "Vector4i64Vector", "std::vector<Eigen::Vector4i64>",
-            py::py_array_to_vectors_int64_eigen_allocator<Eigen::Vector4i64>);
-    vector4i64vector.attr("__doc__") = docstring::static_property(
-            py::cpp_function([](py::handle arg) -> std::string {
-                return "Convert int64 numpy array of shape ``(n, 4)`` to "
-                       "Open3D format.";
-            }),
-            py::none(), py::none(), "");
 }
