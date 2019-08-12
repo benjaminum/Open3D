@@ -342,6 +342,12 @@ bool Visualizer::AddGeometry(
             return false;
         }
     } else if (geometry_ptr->GetGeometryType() ==
+               geometry::Geometry::GeometryType::RGBDImage) {
+        renderer_ptr = std::make_shared<glsl::RGBDImageRenderer>();
+        if (renderer_ptr->AddGeometry(geometry_ptr) == false) {
+            return false;
+        }
+    } else if (geometry_ptr->GetGeometryType() ==
                geometry::Geometry::GeometryType::TetraMesh) {
         renderer_ptr = std::make_shared<glsl::TetraMeshRenderer>();
         if (renderer_ptr->AddGeometry(geometry_ptr) == false) {
