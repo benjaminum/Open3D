@@ -25,7 +25,9 @@
 // ----------------------------------------------------------------------------
 
 #include "Open3D/Geometry/TetraMesh.h"
+#include <Eigen/Geometry>
 #include "Open3D/Geometry/PointCloud.h"
+#include "Open3D/Geometry/TriangleMesh.h"
 #include "TestUtility/UnitTest.h"
 
 using namespace Eigen;
@@ -284,94 +286,79 @@ TEST(TetraMesh, OperatorADD) {
 //
 // ----------------------------------------------------------------------------
 TEST(TetraMesh, Purge) {
-    vector<Vector3d> ref_vertices = {{839.215686, 392.156863, 780.392157},
-                                     {796.078431, 909.803922, 196.078431},
-                                     {333.333333, 764.705882, 274.509804},
-                                     {552.941176, 474.509804, 627.450980},
-                                     {364.705882, 509.803922, 949.019608},
-                                     {913.725490, 635.294118, 713.725490},
-                                     {141.176471, 603.921569, 15.686275},
-                                     {239.215686, 133.333333, 803.921569},
-                                     {152.941176, 400.000000, 129.411765},
-                                     {105.882353, 996.078431, 215.686275},
-                                     {509.803922, 835.294118, 611.764706},
-                                     {294.117647, 635.294118, 521.568627},
-                                     {490.196078, 972.549020, 290.196078},
-                                     {768.627451, 525.490196, 768.627451},
-                                     {400.000000, 890.196078, 282.352941},
-                                     {349.019608, 803.921569, 917.647059},
-                                     {66.666667, 949.019608, 525.490196},
-                                     {82.352941, 192.156863, 662.745098},
-                                     {890.196078, 345.098039, 62.745098},
-                                     {19.607843, 454.901961, 62.745098},
-                                     {235.294118, 968.627451, 901.960784},
-                                     {847.058824, 262.745098, 537.254902},
-                                     {372.549020, 756.862745, 509.803922},
-                                     {666.666667, 529.411765, 39.215686}};
+    typedef vector<Vector4i, aligned_allocator<Vector4i>> vector_Vector4i;
 
-    vector<Vector3i> ref_triangles = {
-            {20, 9, 18},  {19, 21, 4}, {8, 18, 6}, {13, 11, 15}, {8, 12, 22},
-            {21, 15, 17}, {3, 14, 0},  {5, 3, 19}, {2, 23, 5},   {12, 20, 14},
-            {7, 15, 12},  {11, 23, 6}, {9, 21, 6}, {8, 19, 22},  {1, 22, 12},
-            {1, 4, 15},   {21, 8, 1},  {0, 10, 1}, {5, 23, 21},  {20, 6, 12},
-            {8, 18, 12},  {16, 12, 0}};
+    vector<Vector3d> vertices = {// duplicate
+                                 {796.078431, 909.803922, 196.078431},
+                                 {796.078431, 909.803922, 196.078431},
+                                 {333.333333, 764.705882, 274.509804},
+                                 {552.941176, 474.509804, 627.450980},
+                                 {364.705882, 509.803922, 949.019608},
+                                 {913.725490, 635.294118, 713.725490},
+                                 {141.176471, 603.921569, 15.686275},
+                                 // unreferenced
+                                 {239.215686, 133.333333, 803.921569}};
 
-    vector<Vector3d> ref_triangle_normals = {
-            {839.215686, 392.156863, 780.392157},
+    vector_Vector4i tetras = {{2, 6, 3, 4},
+                              // same tetra after vertex duplicate is removed
+                              {0, 2, 3, 4},
+                              {1, 2, 3, 4},
+                              // duplicates
+                              {3, 4, 5, 6},
+                              {4, 3, 5, 6},
+                              {3, 4, 6, 5},
+                              {5, 3, 4, 6},
+                              // degenerate
+                              {4, 5, 6, 6}};
+
+    geometry::TetraMesh tm;
+    tm.vertices_ = vertices;
+    tm.tetras_ = tetras;
+
+    tm.RemoveDuplicatedTetras();
+
+    vector_Vector4i ref_tetras_after_tetra_duplicate_removal = {
+            {2, 6, 3, 4}, {0, 2, 3, 4}, {1, 2, 3, 4}, {3, 4, 5, 6}, {4, 5, 6, 6}
+
+    };
+    ExpectEQ(ref_tetras_after_tetra_duplicate_removal, tm.tetras_);
+
+    tm.RemoveDuplicatedVertices();
+
+    vector<Vector3d> ref_vertices_after_duplicate_removal = {
             {796.078431, 909.803922, 196.078431},
             {333.333333, 764.705882, 274.509804},
             {552.941176, 474.509804, 627.450980},
             {364.705882, 509.803922, 949.019608},
             {913.725490, 635.294118, 713.725490},
             {141.176471, 603.921569, 15.686275},
-            {239.215686, 133.333333, 803.921569},
-            {105.882353, 996.078431, 215.686275},
-            {509.803922, 835.294118, 611.764706},
-            {294.117647, 635.294118, 521.568627},
-            {490.196078, 972.549020, 290.196078},
-            {400.000000, 890.196078, 282.352941},
-            {349.019608, 803.921569, 917.647059},
-            {66.666667, 949.019608, 525.490196},
-            {82.352941, 192.156863, 662.745098},
-            {890.196078, 345.098039, 62.745098},
-            {19.607843, 454.901961, 62.745098},
-            {235.294118, 968.627451, 901.960784},
-            {847.058824, 262.745098, 537.254902},
-            {372.549020, 756.862745, 509.803922},
-            {666.666667, 529.411765, 39.215686}};
+            {239.215686, 133.333333, 803.921569}};
+    vector_Vector4i ref_tetras_after_vertex_duplicate_removal = {{1, 5, 2, 3},
+                                                                 {0, 1, 2, 3},
+                                                                 {0, 1, 2, 3},
+                                                                 {2, 3, 4, 5},
+                                                                 {3, 4, 5, 5}};
+    ExpectEQ(ref_vertices_after_duplicate_removal, tm.vertices_);
+    ExpectEQ(ref_tetras_after_vertex_duplicate_removal, tm.tetras_);
 
-    int size = 25;
-
-    Vector3d dmin(0.0, 0.0, 0.0);
-    Vector3d dmax(1000.0, 1000.0, 1000.0);
-
-    Vector4i imin(0, 0, 0, 0);
-    Vector4i imax(size - 1, size - 1, size - 1, size - 1);
-
-    geometry::TetraMesh tm0;
-    geometry::TetraMesh tm1;
-
-    tm0.vertices_.resize(size);
-    tm0.tetras_.resize(size);
-
-    tm1.vertices_.resize(size);
-    tm1.tetras_.resize(size);
-
-    Rand(tm0.vertices_, dmin, dmax, 0);
-    Rand(tm0.tetras_, imin, imax, 0);
-
-    Rand(tm1.vertices_, dmin, dmax, 0);
-    Rand(tm1.tetras_, imin, imax, 0);
-
-    geometry::TetraMesh tm = tm0 + tm1;
-
-    tm.RemoveDuplicatedVertices();
-    tm.RemoveDuplicatedTetras();
     tm.RemoveUnreferencedVertices();
+
+    vector<Vector3d> ref_vertices_after_unreferenced_removal = {
+            {796.078431, 909.803922, 196.078431},
+            {333.333333, 764.705882, 274.509804},
+            {552.941176, 474.509804, 627.450980},
+            {364.705882, 509.803922, 949.019608},
+            {913.725490, 635.294118, 713.725490},
+            {141.176471, 603.921569, 15.686275}};
+    ExpectEQ(ref_vertices_after_unreferenced_removal, tm.vertices_);
+
     tm.RemoveDegenerateTetras();
 
-    ExpectEQ(ref_vertices, tm.vertices_);
-    // ExpectEQ(ref_triangles, tm.tetras_);
+    vector_Vector4i ref_tetras_after_degenerate_removal = {
+            {1, 5, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {2, 3, 4, 5}
+
+    };
+    ExpectEQ(ref_tetras_after_degenerate_removal, tm.tetras_);
 }
 
 // ----------------------------------------------------------------------------
@@ -403,4 +390,135 @@ TEST(TetraMesh, HasTetras) {
     tm.tetras_.resize(size);
 
     EXPECT_TRUE(tm.HasTetras());
+}
+
+// ----------------------------------------------------------------------------
+//
+// ----------------------------------------------------------------------------
+TEST(TetraMesh, CreateFromPointCloud) {
+    // create a random point cloud
+    geometry::PointCloud pc;
+
+    int size = 100;
+
+    Vector3d dmin(0.0, 0.0, 0.0);
+    Vector3d dmax(1000.0, 1000.0, 1000.0);
+
+    pc.points_.resize(size);
+
+    Rand(pc.points_, dmin, dmax, 0);
+
+    auto tm = geometry::TetraMesh::CreateFromPointCloud(pc);
+
+    EXPECT_EQ(pc.points_.size(), tm->vertices_.size());
+
+    // check if the delaunay property holds for all tetras.
+    // There should be no vertex inside the circumsphere of a tetrahedron.
+    // This is more a check to see if we have used the right Qhull parameters.
+    auto tetrahedron_circumsphere = [&](const geometry::TetraMesh& tm,
+                                        size_t tetra_idx) {
+        Vector4i tetra = tm.tetras_[tetra_idx];
+        Matrix4d homogeneous_points;
+        for (int i = 0; i < 4; ++i) {
+            homogeneous_points.row(i) = tm.vertices_[tetra[i]].homogeneous();
+        }
+        double det = homogeneous_points.determinant();
+        Vector4d b;
+        for (int i = 0; i < 4; ++i) {
+            b[i] = -tm.vertices_[tetra[i]].squaredNorm();
+        }
+
+        Matrix4d tmp;
+        double x[3];
+        for (int i = 0; i < 3; ++i) {
+            tmp = homogeneous_points;
+            tmp.col(i) = b;
+            x[i] = tmp.determinant() / det;
+        }
+        Vector3d center(-x[0] / 2, -x[1] / 2, -x[2] / 2);
+        double sqr_radius = (tm.vertices_[tetra[0]] - center).squaredNorm();
+
+        return std::make_tuple(center, sqr_radius);
+    };
+
+    bool circumsphere_property = true;
+    for (size_t i = 0; i < tm->tetras_.size() && circumsphere_property; ++i) {
+        Vector3d sphere_center;
+        double sqr_radius;
+        std::tie(sphere_center, sqr_radius) = tetrahedron_circumsphere(*tm, i);
+
+        const Vector4i tetra = tm->tetras_[i];
+
+        for (int j = 0; j < (int)tm->vertices_.size(); ++j) {
+            if (tetra[0] == j || tetra[1] == j || tetra[2] == j ||
+                tetra[3] == j) {
+                continue;
+            }
+            Vector3d v = tm->vertices_[j];
+            double sqr_dist_center_v = (v - sphere_center).squaredNorm();
+            if (sqr_dist_center_v <= sqr_radius) {
+                circumsphere_property = false;
+                break;
+            }
+        }
+    }
+    EXPECT_TRUE(circumsphere_property);
+}
+
+// ----------------------------------------------------------------------------
+//
+// ----------------------------------------------------------------------------
+TEST(TetraMesh, ExtractTriangleMesh) {
+    // create a random point cloud
+    geometry::PointCloud pc;
+
+    int size = 250;
+
+    Vector3d dmin(0.0, 0.0, 0.0);
+    Vector3d dmax(1.0, 1.0, 1.0);
+
+    pc.points_.resize(size);
+
+    Rand(pc.points_, dmin, dmax, 0);
+
+    auto tm = geometry::TetraMesh::CreateFromPointCloud(pc);
+
+    vector<double> values(tm->vertices_.size());
+
+    // distance to center as values
+    Vector3d center(0.5 * (dmin + dmax));
+    for (size_t i = 0; i < tm->vertices_.size(); ++i) {
+        double dist = (tm->vertices_[i] - center).norm();
+        values[i] = dist;
+    }
+
+    // all values are below the level
+    {
+        auto triangle_mesh = tm->ExtractTriangleMesh(values, 123.4);
+        EXPECT_EQ(triangle_mesh->vertices_.size(), size_t(0));
+        EXPECT_EQ(triangle_mesh->triangles_.size(), size_t(0));
+    }
+
+    // all values are above the level
+    {
+        auto triangle_mesh = tm->ExtractTriangleMesh(values, -123.4);
+        EXPECT_EQ(triangle_mesh->vertices_.size(), size_t(0));
+        EXPECT_EQ(triangle_mesh->triangles_.size(), size_t(0));
+    }
+
+    // values below and above the level
+    {
+        auto triangle_mesh = tm->ExtractTriangleMesh(values, 0.25);
+        EXPECT_EQ(triangle_mesh->vertices_.size(), size_t(125));
+        EXPECT_EQ(triangle_mesh->triangles_.size(), size_t(246));
+
+        // the following should have no effect
+        triangle_mesh->RemoveDuplicatedVertices();
+        triangle_mesh->RemoveDuplicatedTriangles();
+        triangle_mesh->RemoveUnreferencedVertices();
+        triangle_mesh->RemoveDegenerateTriangles();
+
+        EXPECT_EQ(triangle_mesh->vertices_.size(), size_t(125));
+        EXPECT_EQ(triangle_mesh->triangles_.size(), size_t(246));
+    }
 }
