@@ -113,7 +113,9 @@ void pybind_geometry_classes(py::module &m) {
               "The scale parameter that is multiplied to the points/vertices "
               "of the geometry"},
              {"center",
-              "If true, then the scale is applied to the centered geometry"}});
+              "If true, then the scale is applied to the centered geometry. "
+              "The center is computed as the center of gravity of all "
+              "points."}});
     docstring::ClassMethodDocInject(
             m, "Geometry3D", "rotate",
             {{"rotation",
@@ -122,7 +124,8 @@ void pybind_geometry_classes(py::module &m) {
               "the normalized vector defines the axis of rotation and "
               "the norm the angle around this axis."},
              {"center",
-              "If true, then the rotation is applied to the centered geometry"},
+              "If true, then the rotation is applied to the centered geometry. "
+              "The center is computed as the center of gravity of all points."},
              {"type",
               "Type of rotation, i.e., an Euler format, or "
               "axis-angle."}});
