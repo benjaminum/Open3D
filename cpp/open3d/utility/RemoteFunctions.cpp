@@ -378,6 +378,116 @@ bool SetMeshData(
     return ReplyIsOKStatus(*reply);
 }
 
+std::shared_ptr<open3d::geometry::Geometry3D> GetMeshData(
+        const std::string& path,
+        int time,
+        const std::string& layer,
+        std::shared_ptr<Connection> connection) {
+    messages::GetMeshData msg;
+    msg.path = path;
+    msg.time = time;
+    msg.layer = layer;
+
+    msgpack::sbuffer sbuf;
+    messages::Request request{msg.MsgId()};
+    msgpack::pack(sbuf, request);
+    msgpack::pack(sbuf, msg);
+
+    if (!connection) {
+        connection = std::make_shared<Connection>();
+    }
+    zmq::message_t send_msg(sbuf.data(), sbuf.size());
+    auto reply_msg = connection->Send(send_msg);
+
+    try {
+        messages::MeshData mesh_data;
+        size_t offset = 0;
+        messages::Reply reply;
+        auto obj_handle = msgpack::unpack((char*)reply_msg->data(),
+                                          reply_msg->size(), offset);
+        obj_handle.get().convert(reply);
+        if (reply.msg_id != mesh_data.MsgId()) {
+            LogDebug("Expected reply with id {} but got {}", mesh_data.MsgId(),
+                     reply.msg_id);
+        } else {
+            auto mesh_data_obj_handle = msgpack::unpack(
+                    (char*)reply_msg->data(), reply_msg->size(), offset);
+            mesh_data_obj_handle.get().convert(mesh_data);
+
+            std::vector<Eigen::Vector3d> vertices;
+            if (mesh_data.vertices.shape.size() == 2 &&
+                mesh_data.vertices.shape[1] == 3) {
+                vertices.resize(mesh_data.vertices.shape[0]);
+                if (mesh_data.vertices.type == messages::TypeStr<float>()) {
+                    for (int64_t i = 0; i < mesh_data.vertices.shape[0]; ++i) {
+                        vertices[i][0] =
+                                mesh_data.vertices.Ptr<float>()[i * 3 + 0];
+                        vertices[i][1] =
+                                mesh_data.vertices.Ptr<float>()[i * 3 + 1];
+                        vertices[i][2] =
+                                mesh_data.vertices.Ptr<float>()[i * 3 + 2];
+                    }
+                } else if (mesh_data.vertices.type ==
+                           messages::TypeStr<double>()) {
+                    for (int64_t i = 0; i < mesh_data.vertices.shape[0]; ++i) {
+                        vertices[i][0] =
+                                mesh_data.vertices.Ptr<double>()[i * 3 + 0];
+                        vertices[i][1] =
+                                mesh_data.vertices.Ptr<double>()[i * 3 + 1];
+                        vertices[i][2] =
+                                mesh_data.vertices.Ptr<double>()[i * 3 + 2];
+                    }
+                } else {
+                    LogInfo("GetMeshData: Invalid type for vertices");
+                    return std::shared_ptr<open3d::geometry::Geometry3D>();
+                }
+            } else {
+                LogInfo("GetMeshData: Invalid shape for vertices");
+                return std::shared_ptr<open3d::geometry::Geometry3D>();
+            }
+
+            if (mesh_data.faces.shape.size() == 2 &&
+                mesh_data.faces.shape[1] == 3) {
+                std::vector<Eigen::Vector3i> faces;
+
+                faces.resize(mesh_data.faces.shape[0]);
+                if (mesh_data.faces.type == messages::TypeStr<int32_t>()) {
+                    for (int64_t i = 0; i < mesh_data.faces.shape[0]; ++i) {
+                        faces[i][0] = mesh_data.faces.Ptr<int32_t>()[i * 3 + 0];
+                        faces[i][1] = mesh_data.faces.Ptr<int32_t>()[i * 3 + 1];
+                        faces[i][2] = mesh_data.faces.Ptr<int32_t>()[i * 3 + 2];
+                    }
+                } else if (mesh_data.faces.type ==
+                           messages::TypeStr<int64_t>()) {
+                    for (int64_t i = 0; i < mesh_data.faces.shape[0]; ++i) {
+                        faces[i][0] = mesh_data.faces.Ptr<int64_t>()[i * 3 + 0];
+                        faces[i][1] = mesh_data.faces.Ptr<int64_t>()[i * 3 + 1];
+                        faces[i][2] = mesh_data.faces.Ptr<int64_t>()[i * 3 + 2];
+                    }
+                } else {
+                    LogInfo("GetMeshData: Invalid type for faces");
+                    return std::shared_ptr<open3d::geometry::Geometry3D>();
+                }
+
+                std::shared_ptr<open3d::geometry::TriangleMesh> mesh(
+                        new open3d::geometry::TriangleMesh(vertices, faces));
+                return mesh;
+
+            } else if (mesh_data.faces.shape.size() == 0) {
+                std::shared_ptr<open3d::geometry::PointCloud> pcd(
+                        new open3d::geometry::PointCloud(vertices));
+                return pcd;
+            } else {
+                LogInfo("GetMeshData: Invalid shape for triangles");
+                return std::shared_ptr<open3d::geometry::Geometry3D>();
+            }
+        }
+    } catch (std::exception& e) {
+        LogDebug("GetMeshData: Failed to parse message: {}", e.what());
+    }
+    return std::shared_ptr<open3d::geometry::Geometry3D>();
+}
+
 bool SetLegacyCamera(const open3d::camera::PinholeCameraParameters& camera,
                      const std::string& path,
                      int time,

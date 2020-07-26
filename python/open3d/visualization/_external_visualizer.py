@@ -114,6 +114,26 @@ class ExternalVisualizer:
 
         return all(result)
 
+    def get(self, path='', time=0, layer='', connection=None):
+        """Get an object from the visualizer.
+
+
+        Args:
+            path: A path describing a location in the scene tree.
+
+            time: An integer time value associated with the object.
+
+            layer: The layer associated with the object.
+
+            connection: A connection object to use for sending data. This
+                parameter can be used to override the default object.
+        """
+        if connection is None:
+            connection = o3d.utility.Connection(address=self.address,
+                                                timeout=self.timeout)
+        obj = o3d.utility.get_mesh_data(path, time, layer)
+        return obj
+
     def set_time(self, time):
         """Sets the time in the external visualizer
 

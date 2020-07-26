@@ -154,6 +154,12 @@ bool SetMeshData(
                 std::map<std::string, open3d::core::Tensor>(),
         std::shared_ptr<Connection> connection = std::shared_ptr<Connection>());
 
+std::shared_ptr<open3d::geometry::Geometry3D> GetMeshData(
+        const std::string& path,
+        int time = 0,
+        const std::string& layer = "",
+        std::shared_ptr<Connection> connection = std::shared_ptr<Connection>());
+
 /// Function for sending Camera data.
 /// \param camera      The PinholeCameraParameters object.
 ///

@@ -96,6 +96,16 @@ void pybind_remote_functions(py::module& m) {
                      "the connection."},
             });
 
+    m.def("get_mesh_data", &utility::GetMeshData, "path"_a, "time"_a = 0,
+          "layer"_a = "",
+          "connection"_a = std::shared_ptr<utility::Connection>(),
+          "Sends a set_mesh_data message.");
+    docstring::FunctionDocInject(
+            m, "get_mesh_data",
+            {{"path", "A path descriptor, e.g., 'mygroup/points'."},
+             {"time", "The time associated with this data."},
+             {"layer", "The layer associated with this data."}});
+
     m.def("set_legacy_camera", &utility::SetLegacyCamera, "camera"_a,
           "path"_a = "", "time"_a = 0, "layer"_a = "",
           "connection"_a = std::shared_ptr<utility::Connection>(),
