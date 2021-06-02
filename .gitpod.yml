@@ -5,7 +5,7 @@ tasks:
     mkdir build &&
     cd build &&
     cmake .. &&
-    make -j2
+    make -j4
 github:
   prebuilds:
     # enable for the default branch (defaults to true)
