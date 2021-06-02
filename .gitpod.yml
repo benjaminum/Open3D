@@ -1,7 +1,7 @@
 image:
   file: .gitpod.dockerfile
 tasks:
-- command: >
+- init: >
     mkdir build &&
     cd build &&
     cmake .. &&
