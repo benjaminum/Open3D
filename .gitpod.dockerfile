@@ -13,4 +13,6 @@ RUN sudo apt-get update && sudo sudo apt install -y \
   libosmesa6-dev \
   libudev-dev \
   autoconf \
-  libtool
+  libtool \
+  clang-format-10 \
+  doxygen
