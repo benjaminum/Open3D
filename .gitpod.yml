@@ -1,14 +1,19 @@
 image:
   file: .gitpod.dockerfile
 tasks:
-- init: >
-    mkdir build &&
-    cd build &&
-    cmake .. &&
-    make -j6 &&
-    make install-pip-package
-  command: >
+- init: |
+    NPROC=6
+    source util/ci_utils.sh
+    install_docs_dependencies
+    mkdir build
     cd build
+    cmake \
+      -DCMAKE_BUILD_TYPE=Release \
+      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx
+  command: |
+    cd build
+- command: |
+    npx browser-sync start --server "docs/_out/html" --watch
 github:
   prebuilds:
     # enable for the default branch (defaults to true)
