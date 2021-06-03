@@ -16,4 +16,8 @@ RUN sudo apt-get update && sudo sudo apt install -y \
   libtool \
   ccache \
   clang-format-10 \
-  doxygen
+  doxygen \
+  texlive \
+  texlive-latex-extra \
+  ghostscript \
+  pandoc
