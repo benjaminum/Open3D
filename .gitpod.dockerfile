@@ -14,5 +14,6 @@ RUN sudo apt-get update && sudo sudo apt install -y \
   libudev-dev \
   autoconf \
   libtool \
+  ccache \
   clang-format-10 \
   doxygen

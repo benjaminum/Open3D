@@ -3,12 +3,19 @@ image:
 tasks:
 - init: |
     NPROC=6
+    git clone https://github.com/intel-isl/Open3D-ML.git /workspace/Open3D-ML
+    python -m pip install -r /workspace/Open3D-ML/requirements-tensorflow.txt
+    python -m pip install -r /workspace/Open3D-ML/requirements-torch.txt
     source util/ci_utils.sh
     install_docs_dependencies
     mkdir build
     cd build
     cmake \
       -DCMAKE_BUILD_TYPE=Release \
+      -DBUNDLE_OPEN3D_ML=ON \
+      -DOPEN3D_ML_ROOT=/workspace/Open3D-ML \
+      -DBUILD_TENSORFLOW_OPS=ON \
+      -DBUILD_PYTORCH_OPS=ON \
       .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx
   command: |
     cd build
