@@ -1,7 +1,7 @@
 image:
   file: .gitpod.dockerfile
 tasks:
-- prebuild: |
+- init: |
     NPROC=6 # 6 threads seems to be the limit to avoid OOM.
     git clone https://github.com/intel-isl/Open3D-ML.git /workspace/Open3D-ML
     source util/ci_utils.sh
