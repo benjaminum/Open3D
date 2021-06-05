@@ -14,7 +14,7 @@ tasks:
       -DOPEN3D_ML_ROOT=/workspace/Open3D-ML \
       -DBUILD_TENSORFLOW_OPS=ON \
       -DBUILD_PYTORCH_OPS=ON \
-      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=auto --sphinx || true
+      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx || true
   command: | # start webserver watching the docs
     cd $GITPOD_REPO_ROOT
     npx browser-sync start --server "docs/_out/html" --watch
