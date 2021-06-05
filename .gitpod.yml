@@ -15,12 +15,17 @@ tasks:
       -DBUILD_TENSORFLOW_OPS=ON \
       -DBUILD_PYTORCH_OPS=ON \
       .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx
-  command: | # start webserver watching the docs and change to build dir
-    npx browser-sync start --server "docs/_out/html" --watch &
+  command: | # start webserver watching the docs
+    npx browser-sync start --server "docs/_out/html" --watch
+- command: | # change to build dir for convenience and run example
     cd build
+    ./bin/ViewGeometry --mesh ../examples/test_data/monkey/monkey.obj
 ports:
   # open the browser with the documentation
   - port: 3000
+    onOpen: open-preview
+  # open window with the vnc viewer showing the example
+  - port: 6080
     onOpen: open-preview
 github:
   prebuilds:
