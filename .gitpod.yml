@@ -22,10 +22,10 @@ tasks:
     cd build
     ./bin/ViewGeometry --mesh ../examples/test_data/monkey/monkey.obj
 ports:
-  # open the browser with the documentation
+  # open browser tab with the documentation
   - port: 3000
-    onOpen: open-preview
-  # open window with the vnc viewer showing the example
+    onOpen: open-browser
+  # open preview with the vnc viewer showing the example
   - port: 6080
     onOpen: open-preview
 github:
