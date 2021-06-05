@@ -1,11 +1,11 @@
 image:
   file: .gitpod.dockerfile
 tasks:
-- init: |
+- prebuild: |
     NPROC=6 # 6 threads seems to be the limit to avoid OOM.
     git clone https://github.com/intel-isl/Open3D-ML.git /workspace/Open3D-ML
     source util/ci_utils.sh
-    install_docs_dependencies "/workspace/Open3D-ML"
+    install_docs_dependencies "/workspace/Open3D-ML" || true
     mkdir build
     cd build
     cmake \
@@ -14,7 +14,7 @@ tasks:
       -DOPEN3D_ML_ROOT=/workspace/Open3D-ML \
       -DBUILD_TENSORFLOW_OPS=ON \
       -DBUILD_PYTORCH_OPS=ON \
-      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx
+      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=auto --sphinx || true
   command: | # start webserver watching the docs
     npx browser-sync start --server "docs/_out/html" --watch
 - command: | # change to build dir for convenience and run example
