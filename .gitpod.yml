@@ -15,12 +15,12 @@ tasks:
       -DBUILD_TENSORFLOW_OPS=ON \
       -DBUILD_PYTORCH_OPS=ON \
       .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx || true
-  command: | # start webserver watching the docs
-    cd $GITPOD_REPO_ROOT
-    npx browser-sync start --server "docs/_out/html" --watch
-- command: | # change to build dir for convenience and run example
+  command: | # change to build dir for convenience and run example
     cd build
     ./bin/ViewGeometry --mesh ../examples/test_data/monkey/monkey.obj
+- command: | # start webserver watching the docs
+    cd $GITPOD_REPO_ROOT
+    npx browser-sync start --server "docs/_out/html" --watch
 ports:
   # open browser tab with the documentation
   - port: 3000
