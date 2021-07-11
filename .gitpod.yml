@@ -1,17 +1,39 @@
 image:
   file: .gitpod.dockerfile
 tasks:
-- init: >
-    mkdir build &&
-    cd build &&
-    cmake .. &&
-    make -j2
+- init: |
+    NPROC=6 # 6 threads seems to be the limit to avoid OOM.
+    git clone https://github.com/intel-isl/Open3D-ML.git /workspace/Open3D-ML
+    source util/ci_utils.sh
+    install_docs_dependencies "/workspace/Open3D-ML" || true
+    mkdir build
+    cd build
+    cmake \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUNDLE_OPEN3D_ML=ON \
+      -DOPEN3D_ML_ROOT=/workspace/Open3D-ML \
+      -DBUILD_TENSORFLOW_OPS=ON \
+      -DBUILD_PYTORCH_OPS=ON \
+      .. && make -j $NPROC && make install-pip-package && cd ../docs && python make_docs.py --execute_notebooks=never --sphinx || true
+  command: | # change to build dir for convenience and run example
+    cd build
+    ./bin/ViewGeometry --mesh ../examples/test_data/monkey/monkey.obj
+- command: | # start webserver watching the docs
+    cd $GITPOD_REPO_ROOT
+    npx browser-sync start --server "docs/_out/html" --watch
+ports:
+  # open browser tab with the documentation
+  - port: 3000
+    onOpen: open-browser
+  # open preview with the vnc viewer showing the example
+  - port: 6080
+    onOpen: open-preview
 github:
   prebuilds:
     # enable for the default branch (defaults to true)
     master: true
     # enable for all branches in this repo (defaults to false)
-    branches: false
+    branches: true
     # enable for pull requests coming from this repo (defaults to true)
     pullRequests: true
     # enable for pull requests coming from forks (defaults to false)

@@ -13,4 +13,11 @@ RUN sudo apt-get update && sudo sudo apt install -y \
   libosmesa6-dev \
   libudev-dev \
   autoconf \
-  libtool
+  libtool \
+  ccache \
+  clang-format-10 \
+  doxygen \
+  texlive \
+  texlive-latex-extra \
+  ghostscript \
+  pandoc
