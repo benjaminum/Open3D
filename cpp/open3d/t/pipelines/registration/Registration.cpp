@@ -29,8 +29,8 @@
 #include "open3d/core/Tensor.h"
 #include "open3d/core/nns/NearestNeighborSearch.h"
 #include "open3d/t/geometry/PointCloud.h"
-#include "open3d/utility/Console.h"
 #include "open3d/utility/Helper.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace t {
@@ -71,8 +71,8 @@ static RegistrationResult GetRegistrationResultAndCorrespondences(
                 "Index is not set.");
     }
 
-    core::Tensor distances;
-    std::tie(result.correspondence_set_.second, distances) =
+    core::Tensor distances, counts;
+    std::tie(result.correspondence_set_.second, distances, counts) =
             target_nns.HybridSearch(source.GetPoints(),
                                     max_correspondence_distance, 1);
 

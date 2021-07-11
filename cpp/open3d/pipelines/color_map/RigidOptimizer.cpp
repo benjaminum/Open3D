@@ -200,14 +200,18 @@ geometry::TriangleMesh RunRigidOptimizer(
                                                                          JTr);
             pose = delta * pose;
             opt_camera_trajectory.parameters_[c].extrinsic_ = pose;
-#pragma omp critical
+#pragma omp critical(RunRigidOptimizer)
             {
                 residual += r2;
                 total_num_ += int(visibility_image_to_vertex[c].size());
             }
         }
-        utility::LogDebug("Residual error : {:.6f} (avg : {:.6f})", residual,
-                          residual / total_num_);
+        if (total_num_ > 0) {
+            utility::LogDebug("Residual error : {:.6f} (avg : {:.6f})",
+                              residual, residual / total_num_);
+        } else {
+            utility::LogDebug("Residual error : {:.6f}", residual);
+        }
         SetProxyIntensityForVertex(opt_mesh, images_gray, utility::nullopt,
                                    opt_camera_trajectory,
                                    visibility_vertex_to_image, proxy_intensity,

@@ -33,8 +33,8 @@
 #include "open3d/geometry/KDTreeSearchParam.h"
 #include "open3d/geometry/PointCloud.h"
 #include "open3d/pipelines/registration/RobustKernel.h"
-#include "open3d/utility/Console.h"
 #include "open3d/utility/Eigen.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace pipelines {
@@ -257,10 +257,16 @@ RegistrationResult RegistrationColoredICP(
                 "ColoredICP requires source pointcloud to have colors.");
     }
 
-    auto target_c = InitializePointCloudForColoredICP(
-            target, geometry::KDTreeSearchParamHybrid(max_distance * 2.0, 30));
-    return RegistrationICP(source, *target_c, max_distance, init, estimation,
-                           criteria);
+    if (auto target_c = InitializePointCloudForColoredICP(
+                target,
+                geometry::KDTreeSearchParamHybrid(max_distance * 2.0, 30))) {
+        return RegistrationICP(source, *target_c, max_distance, init,
+                               estimation, criteria);
+    } else {
+        utility::LogError(
+                "Internal error: InitializePointCloudForColoredICP returns "
+                "nullptr.");
+    };
 }
 
 }  // namespace registration

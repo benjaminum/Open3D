@@ -34,7 +34,7 @@
 
 #include "open3d/geometry/PointCloud.h"
 #include "open3d/geometry/TriangleMesh.h"
-#include "open3d/utility/Console.h"
+#include "open3d/utility/Logging.h"
 
 // clang-format off
 #ifdef _MSC_VER
@@ -190,7 +190,7 @@ struct FEMTreeProfiler {
     FEMTree<Dim, Real>& tree;
     double t;
 
-    FEMTreeProfiler(FEMTree<Dim, Real>& t) : tree(t) {}
+    FEMTreeProfiler(FEMTree<Dim, Real>& tree) : tree(tree), t(0.0) {}
     void start(void) {
         t = Time(), FEMTree<Dim, Real>::ResetLocalMemoryUsage();
     }

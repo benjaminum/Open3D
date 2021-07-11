@@ -30,6 +30,7 @@
 #include <thrust/tuple.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <sstream>
 #include <tuple>
@@ -47,7 +48,7 @@
 #include "open3d/core/Tensor.h"
 #include "open3d/core/kernel/CUDALauncher.cuh"
 #include "open3d/core/kernel/Reduction.h"
-#include "open3d/utility/Console.h"
+#include "open3d/utility/Logging.h"
 
 // CUDA reduction is based on PyTorch's CUDA reduction implementation.
 // See: aten/src/ATen/native/cuda/Reduce.cuh

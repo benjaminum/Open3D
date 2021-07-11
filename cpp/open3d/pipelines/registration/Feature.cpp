@@ -30,7 +30,7 @@
 
 #include "open3d/geometry/KDTreeFlann.h"
 #include "open3d/geometry/PointCloud.h"
-#include "open3d/utility/Console.h"
+#include "open3d/utility/Logging.h"
 
 namespace open3d {
 namespace pipelines {
@@ -121,6 +121,9 @@ std::shared_ptr<Feature> ComputeFPFHFeature(
     }
     geometry::KDTreeFlann kdtree(input);
     auto spfh = ComputeSPFHFeature(input, kdtree, search_param);
+    if (spfh == nullptr) {
+        utility::LogError("Internal error: SPFH feature is nullptr.");
+    }
 #pragma omp parallel for schedule(static)
     for (int i = 0; i < (int)input.points_.size(); i++) {
         const auto &point = input.points_[i];
